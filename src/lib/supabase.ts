@@ -17,3 +17,13 @@ export type Todo = {
 export type Status = 'belum' | 'proses' | 'selesai'
 export type TodoInsert = Omit<Todo, 'id' | 'created_at'>
 export type TodoUpdate = Partial<TodoInsert>
+
+export type Note = {
+  id: number
+  judul: string
+  catatan: string
+  created_at: string
+  updated_at: string
+}
+export type NoteInsert = Omit<Note, 'id' | 'created_at' | 'updated_at'>
+export type NoteUpdate = Partial<NoteInsert>

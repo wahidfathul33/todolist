@@ -2,14 +2,20 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
-import { supabase, Todo } from '@/lib/supabase'
-import { Plus, Sparkles, ClipboardList } from 'lucide-react'
+import { supabase, Todo, Note } from '@/lib/supabase'
+import { Plus, Sparkles, ClipboardList, NotebookPen } from 'lucide-react'
 import AddTodoModal from '@/components/AddTodoModal'
 import EditTodoModal from '@/components/EditTodoModal'
 import TodoCard from '@/components/TodoCard'
 import FilterBar from '@/components/FilterBar'
+import AddNoteModal from '@/components/AddNoteModal'
+import EditNoteModal from '@/components/EditNoteModal'
+import NoteCard from '@/components/NoteCard'
 
 export default function Home() {
+  const [activeTab, setActiveTab] = useState<'todo' | 'note'>('todo')
+
+  // Todo state
   const [todos, setTodos] = useState<Todo[]>([])
   const [loading, setLoading] = useState(true)
   const [showAdd, setShowAdd] = useState(false)
@@ -17,6 +23,13 @@ export default function Home() {
   const [filter, setFilter] = useState<'all' | 'belum' | 'proses' | 'selesai'>('all')
   const [search, setSearch] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<number | null>(null)
+
+  // Note state
+  const [notes, setNotes] = useState<Note[]>([])
+  const [notesLoading, setNotesLoading] = useState(true)
+  const [showAddNote, setShowAddNote] = useState(false)
+  const [editNote, setEditNote] = useState<Note | null>(null)
+  const [noteDeleteConfirm, setNoteDeleteConfirm] = useState<number | null>(null)
 
   const fetchTodos = async () => {
     setLoading(true)
@@ -34,7 +47,29 @@ export default function Home() {
 
   useEffect(() => {
     fetchTodos()
+    fetchNotes()
   }, [])
+
+  const fetchNotes = async () => {
+    setNotesLoading(true)
+    const { data, error } = await supabase
+      .from('notes')
+      .select('*')
+      .order('updated_at', { ascending: false })
+    if (!error && data) setNotes(data as Note[])
+    setNotesLoading(false)
+  }
+
+  const handleDeleteNote = async (id: number) => {
+    if (noteDeleteConfirm !== id) {
+      setNoteDeleteConfirm(id)
+      setTimeout(() => setNoteDeleteConfirm(null), 3000)
+      return
+    }
+    await supabase.from('notes').delete().eq('id', id)
+    setNoteDeleteConfirm(null)
+    fetchNotes()
+  }
 
   const handleDelete = async (id: number) => {
     if (deleteConfirm !== id) {
@@ -69,6 +104,16 @@ export default function Home() {
     })
   }, [todos, filter, search])
 
+  const groupedTodos = useMemo(() => {
+    const groups: Record<string, typeof filteredTodos> = {}
+    for (const todo of filteredTodos) {
+      const date = todo.tanggal ?? 'Tanpa Tanggal'
+      if (!groups[date]) groups[date] = []
+      groups[date].push(todo)
+    }
+    return Object.entries(groups).sort(([a], [b]) => b.localeCompare(a))
+  }, [filteredTodos])
+
   const stats = useMemo(() => ({
     total: todos.length,
     belum: todos.filter((t) => t.status === 'belum').length,
@@ -102,6 +147,25 @@ export default function Home() {
           <p className="text-pink-400 text-sm mt-1 font-medium">Atur kegiatanmu dengan cantik ✨</p>
         </div>
 
+        {/* Tab switcher */}
+        <div className="flex bg-white rounded-2xl p-1 border-2 border-pink-100 shadow-sm mb-6">
+          <button
+            onClick={() => setActiveTab('todo')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'todo' ? 'bg-gradient-to-r from-pink-400 to-rose-400 text-white shadow-sm' : 'text-pink-400 hover:text-pink-600'}`}
+          >
+            <ClipboardList className="w-4 h-4" />
+            Todo
+          </button>
+          <button
+            onClick={() => setActiveTab('note')}
+            className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'note' ? 'bg-gradient-to-r from-violet-400 to-purple-400 text-white shadow-sm' : 'text-violet-400 hover:text-violet-600'}`}
+          >
+            <NotebookPen className="w-4 h-4" />
+            Catatan
+          </button>
+        </div>
+
+        {activeTab === 'todo' && (<>
         {/* Stats cards */}
         <div className="grid grid-cols-4 gap-2 mb-6">
           <div className="bg-white rounded-2xl p-3 text-center border-2 border-pink-100 shadow-sm">
@@ -162,15 +226,27 @@ export default function Home() {
             </div>
           </div>
         ) : (
-          <div className="space-y-3">
-            {filteredTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onEdit={setEditTodo}
-                onDelete={handleDelete}
-                onToggleStatus={handleToggleStatus}
-              />
+          <div className="space-y-5">
+            {groupedTodos.map(([date, items]) => (
+              <div key={date}>
+                <div className="flex items-center gap-2 mb-2 px-1">
+                  <span className="text-xs font-bold text-pink-500 bg-pink-100 px-3 py-1 rounded-full">
+                    {date === 'Tanpa Tanggal' ? 'Tanpa Tanggal' : new Date(date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                  </span>
+                  <div className="flex-1 h-px bg-pink-100" />
+                </div>
+                <div className="space-y-3">
+                  {items.map((todo) => (
+                    <TodoCard
+                      key={todo.id}
+                      todo={todo}
+                      onEdit={setEditTodo}
+                      onDelete={handleDelete}
+                      onToggleStatus={handleToggleStatus}
+                    />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
         )}
@@ -200,16 +276,65 @@ export default function Home() {
             </p>
           </div>
         )}
+        </>)}
+
+        {activeTab === 'note' && (<>
+        {/* Note delete confirm */}
+        {noteDeleteConfirm !== null && (
+          <div className="mb-4 bg-rose-50 border-2 border-rose-200 rounded-2xl px-4 py-3 text-center animate-bounce-in">
+            <p className="text-rose-600 text-sm font-semibold">Ketuk hapus lagi untuk konfirmasi 🗑️</p>
+          </div>
+        )}
+
+        {/* Notes list */}
+        {notesLoading ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-3">
+            <div className="w-12 h-12 border-4 border-violet-200 border-t-violet-500 rounded-full animate-spin" />
+            <p className="text-violet-400 font-medium text-sm">Lagi loading ya sayang...</p>
+          </div>
+        ) : notes.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-16 gap-4 animate-fade-in-up">
+            <div className="w-20 h-20 bg-violet-100 rounded-full flex items-center justify-center">
+              <NotebookPen className="w-9 h-9 text-violet-300" />
+            </div>
+            <div className="text-center">
+              <p className="text-violet-600 font-bold text-base">Belum ada catatan nih!</p>
+              <p className="text-violet-400 text-sm mt-1">Yuk tulis catatan pertamamu! 📝</p>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {notes.map((note) => (
+              <NoteCard
+                key={note.id}
+                note={note}
+                onEdit={setEditNote}
+                onDelete={handleDeleteNote}
+              />
+            ))}
+          </div>
+        )}
+        </>)}
       </div>
 
       {/* FAB - Add button */}
-      <button
-        onClick={() => setShowAdd(true)}
-        className="fixed bottom-8 right-1/2 translate-x-1/2 sm:right-8 sm:translate-x-0 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-4 rounded-full shadow-2xl shadow-pink-400/50 font-bold text-sm hover:shadow-pink-500/60 hover:from-pink-600 hover:to-rose-600 transition-all active:scale-95"
-      >
-        <Plus className="w-5 h-5" />
-        Tambah Kegiatan
-      </button>
+      {activeTab === 'todo' ? (
+        <button
+          onClick={() => setShowAdd(true)}
+          className="fixed bottom-8 right-1/2 translate-x-1/2 sm:right-8 sm:translate-x-0 flex items-center gap-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white px-6 py-4 rounded-full shadow-2xl shadow-pink-400/50 font-bold text-sm hover:shadow-pink-500/60 hover:from-pink-600 hover:to-rose-600 transition-all active:scale-95"
+        >
+          <Plus className="w-5 h-5" />
+          Tambah Kegiatan
+        </button>
+      ) : (
+        <button
+          onClick={() => setShowAddNote(true)}
+          className="fixed bottom-8 right-1/2 translate-x-1/2 sm:right-8 sm:translate-x-0 flex items-center gap-2 bg-gradient-to-r from-violet-500 to-purple-500 text-white px-6 py-4 rounded-full shadow-2xl shadow-violet-400/50 font-bold text-sm hover:shadow-violet-500/60 hover:from-violet-600 hover:to-purple-600 transition-all active:scale-95"
+        >
+          <Plus className="w-5 h-5" />
+          Tambah Catatan
+        </button>
+      )}
 
       {/* Modals */}
       {showAdd && (
@@ -223,6 +348,19 @@ export default function Home() {
           todo={editTodo}
           onClose={() => setEditTodo(null)}
           onSuccess={fetchTodos}
+        />
+      )}
+      {showAddNote && (
+        <AddNoteModal
+          onClose={() => setShowAddNote(false)}
+          onSuccess={fetchNotes}
+        />
+      )}
+      {editNote && (
+        <EditNoteModal
+          note={editNote}
+          onClose={() => setEditNote(null)}
+          onSuccess={fetchNotes}
         />
       )}
     </main>
