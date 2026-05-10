@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "My Todo List 🌸",
-  description: "Aplikasi todo list cantik untuk perempuan",
+  title: "Fita Todo List 🌸",
+  description: "Aplikasi todo list untuk istriku cantik 💖",
   icons: {
     icon: [
       { url: "/favicon/favicon-16x16.png", sizes: "16x16", type: "image/png" },

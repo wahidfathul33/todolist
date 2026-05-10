@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Fita Todo 🌸",
     short_name: "TodoList",
-    description: "Aplikasi todo list untuk istriku cantik",
+    description: "Aplikasi todo list untuk istriku cantik 💖",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",

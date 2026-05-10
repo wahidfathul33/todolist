@@ -1,8 +1,9 @@
 'use client'
 
 import { useState, useEffect, useMemo } from 'react'
+import Image from 'next/image'
 import { supabase, Todo } from '@/lib/supabase'
-import { Plus, Heart, Sparkles, ClipboardList } from 'lucide-react'
+import { Plus, Sparkles, ClipboardList } from 'lucide-react'
 import AddTodoModal from '@/components/AddTodoModal'
 import EditTodoModal from '@/components/EditTodoModal'
 import TodoCard from '@/components/TodoCard'
@@ -87,10 +88,17 @@ export default function Home() {
       <div className="relative max-w-md mx-auto px-4 pt-8">
         {/* Header */}
         <div className="text-center mb-7">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full shadow-lg shadow-pink-300/50 mb-4">
-            <Heart className="w-7 h-7 text-white fill-white" />
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full shadow-lg shadow-pink-300/50 mb-4 overflow-hidden">
+            <Image
+              src="/fita-logo.webp"
+              alt="logo"
+              width={64}
+              height={64}
+              className="object-cover w-full h-full"
+              priority
+            />
           </div>
-          <h1 className="text-3xl font-extrabold text-pink-700 tracking-tight">My Todo List</h1>
+          <h1 className="text-3xl font-extrabold text-pink-700 tracking-tight">Fita Todo List</h1>
           <p className="text-pink-400 text-sm mt-1 font-medium">Atur kegiatanmu dengan cantik ✨</p>
         </div>
 
