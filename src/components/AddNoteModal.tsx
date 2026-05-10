@@ -10,7 +10,7 @@ interface AddNoteModalProps {
 }
 
 export default function AddNoteModal({ onClose, onSuccess }: AddNoteModalProps) {
-  const [form, setForm] = useState<NoteInsert>({ judul: '', catatan: '' })
+  const [form, setForm] = useState<NoteInsert>({ judul: '', catatan: '', starred: false })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
