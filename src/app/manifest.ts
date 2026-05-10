@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "My Todo List 🌸",
+    name: "Fita Todo 🌸",
     short_name: "TodoList",
-    description: "Aplikasi todo list cantik untuk perempuan",
+    description: "Aplikasi todo list untuk istriku cantik",
     start_url: "/",
     display: "standalone",
     orientation: "portrait",
