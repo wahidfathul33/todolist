@@ -35,7 +35,7 @@ export default function EditNoteModal({ note, onClose, onSuccess }: EditNoteModa
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-4 bg-violet-900/20 backdrop-blur-sm">
-      <div className="w-full max-w-md bg-white rounded-3xl shadow-2xl shadow-violet-200/60 animate-bounce-in">
+      <div className="w-full max-w-md md:max-w-2xl lg:max-w-3xl bg-white rounded-3xl shadow-2xl shadow-violet-200/60 animate-bounce-in">
         <div className="bg-gradient-to-r from-violet-400 to-purple-400 rounded-t-3xl p-5 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <NotebookPen className="w-5 h-5 text-white" />
