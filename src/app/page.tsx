@@ -196,7 +196,7 @@ export default function Home() {
         <div className="absolute bottom-1/4 right-0 w-56 h-56 bg-fuchsia-200/30 rounded-full blur-3xl" />
       </div>
 
-      <div className="relative max-w-md mx-auto px-4 pt-8">
+      <div className="relative max-w-md md:max-w-2xl lg:max-w-3xl mx-auto px-4 pt-8">
         {/* Header */}
         <div className="text-center mb-7">
           <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-pink-400 to-rose-500 rounded-full shadow-lg shadow-pink-300/50 mb-4 overflow-hidden">
