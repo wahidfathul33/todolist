@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Todo } from '@/lib/supabase'
 import { Pencil, Trash2, Calendar, FileText, ChevronDown } from 'lucide-react'
+import RichText from '@/components/RichText'
 import { format } from 'date-fns'
 import { id } from 'date-fns/locale'
 
@@ -82,9 +83,11 @@ export default function TodoCard({ todo, onEdit, onDelete, onToggleStatus }: Tod
           {todo.keterangan && (
             <div className="flex items-start gap-2 mt-3">
               <FileText className="w-3.5 h-3.5 text-pink-300 mt-0.5 flex-shrink-0" />
-              <p className={`text-sm leading-relaxed ${isSelesai ? 'text-gray-400' : 'text-pink-600'}`}>
-                {todo.keterangan}
-              </p>
+              <RichText
+                text={todo.keterangan}
+                className={`text-sm leading-relaxed ${isSelesai ? 'text-gray-400' : 'text-pink-600'}`}
+                linkClassName={`break-all hover:underline ${isSelesai ? 'text-gray-400' : 'text-pink-400'}`}
+              />
             </div>
           )}
           <div className="flex items-center gap-2 mt-3">

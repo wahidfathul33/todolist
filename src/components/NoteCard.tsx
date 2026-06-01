@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { Note } from '@/lib/supabase'
 import { Pencil, Trash2, Star, ChevronDown } from 'lucide-react'
+import RichText from '@/components/RichText'
 import { formatDistanceToNow } from 'date-fns'
 import { id } from 'date-fns/locale'
 
@@ -62,7 +63,11 @@ export default function NoteCard({ note, onEdit, onDelete, onToggleStar }: NoteC
       {isExpanded && (
         <div className="px-4 pb-4 border-t border-violet-50">
           {note.catatan && (
-            <p className="text-gray-500 text-sm whitespace-pre-wrap leading-relaxed mt-3">{note.catatan}</p>
+            <RichText
+              text={note.catatan}
+              className="text-gray-500 text-sm leading-relaxed mt-3"
+              linkClassName="text-violet-500 hover:underline break-all"
+            />
           )}
           <p className="text-xs text-violet-300 mt-3 font-medium">{timeAgo}</p>
         </div>
