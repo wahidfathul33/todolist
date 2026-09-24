@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, LinkInsert } from '@/lib/supabase'
+import type { LinkInsert } from '@/lib/db'
+import { createLink } from '@/lib/actions'
 import { X, Link2 } from 'lucide-react'
 
 interface AddLinkModalProps {
@@ -30,10 +31,10 @@ export default function AddLinkModal({ onClose, onSuccess }: AddLinkModalProps) 
     }
     setLoading(true)
     setError('')
-    const { error: supaErr } = await supabase.from('links').insert([{ ...form, url }])
+    const { error: dbErr } = await createLink({ ...form, url })
     setLoading(false)
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

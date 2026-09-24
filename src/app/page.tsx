@@ -2,7 +2,19 @@
 
 import { useState, useEffect, useMemo } from 'react'
 import Image from 'next/image'
-import { supabase, Todo, Note, Link } from '@/lib/supabase'
+import type { Todo, Note, Link } from '@/lib/db'
+import {
+  getAll,
+  getTodos,
+  getNotes,
+  getLinks,
+  deleteTodo,
+  updateTodo,
+  deleteNote,
+  toggleNoteStar,
+  deleteLink,
+  toggleLinkStar,
+} from '@/lib/actions'
 import { Plus, Sparkles, ClipboardList, NotebookPen, Link2 } from 'lucide-react'
 import AddTodoModal from '@/components/AddTodoModal'
 import EditTodoModal from '@/components/EditTodoModal'
@@ -45,53 +57,56 @@ export default function Home() {
 
   const fetchTodos = async () => {
     setLoading(true)
-    const { data, error } = await supabase
-      .from('todos')
-      .select('*')
-      .order('tanggal', { ascending: false })
-      .order('created_at', { ascending: false })
-
-    if (!error && data) {
-      setTodos(data as Todo[])
+    try {
+      setTodos(await getTodos())
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
-
-  useEffect(() => {
-    fetchTodos()
-    fetchNotes()
-    fetchLinks()
-  }, [])
 
   const fetchNotes = async () => {
     setNotesLoading(true)
-    const { data, error } = await supabase
-      .from('notes')
-      .select('*')
-      .order('starred', { ascending: false })
-      .order('updated_at', { ascending: false })
-    if (!error && data) setNotes(data as Note[])
-    setNotesLoading(false)
+    try {
+      setNotes(await getNotes())
+    } finally {
+      setNotesLoading(false)
+    }
   }
 
   const fetchLinks = async () => {
     setLinksLoading(true)
-    const { data, error } = await supabase
-      .from('links')
-      .select('*')
-      .order('starred', { ascending: false })
-      .order('created_at', { ascending: false })
-    if (!error && data) setLinks(data as Link[])
-    setLinksLoading(false)
+    try {
+      setLinks(await getLinks())
+    } finally {
+      setLinksLoading(false)
+    }
   }
 
+  // Server Function dari client dikirim satu per satu, jadi load awal digabung
+  // ke satu action supaya ketiga query jalan paralel di server.
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const data = await getAll()
+        setTodos(data.todos)
+        setNotes(data.notes)
+        setLinks(data.links)
+      } finally {
+        setLoading(false)
+        setNotesLoading(false)
+        setLinksLoading(false)
+      }
+    }
+    load()
+  }, [])
+
   const handleToggleNoteStar = async (note: Note) => {
-    await supabase.from('notes').update({ starred: !note.starred }).eq('id', note.id)
+    await toggleNoteStar(note.id)
     fetchNotes()
   }
 
   const handleToggleLinkStar = async (link: Link) => {
-    await supabase.from('links').update({ starred: !link.starred }).eq('id', link.id)
+    await toggleLinkStar(link.id)
     fetchLinks()
   }
 
@@ -101,7 +116,7 @@ export default function Home() {
       setTimeout(() => setNoteDeleteConfirm(null), 3000)
       return
     }
-    await supabase.from('notes').delete().eq('id', id)
+    await deleteNote(id)
     setNoteDeleteConfirm(null)
     fetchNotes()
   }
@@ -112,7 +127,7 @@ export default function Home() {
       setTimeout(() => setLinkDeleteConfirm(null), 3000)
       return
     }
-    await supabase.from('links').delete().eq('id', id)
+    await deleteLink(id)
     setLinkDeleteConfirm(null)
     fetchLinks()
   }
@@ -123,7 +138,7 @@ export default function Home() {
       setTimeout(() => setDeleteConfirm(null), 3000)
       return
     }
-    await supabase.from('todos').delete().eq('id', id)
+    await deleteTodo(id)
     setDeleteConfirm(null)
     fetchTodos()
   }
@@ -135,7 +150,7 @@ export default function Home() {
       selesai: 'belum',
     }
     const newStatus = cycle[todo.status] ?? 'belum'
-    await supabase.from('todos').update({ status: newStatus }).eq('id', todo.id)
+    await updateTodo(todo.id, { status: newStatus })
     fetchTodos()
   }
 

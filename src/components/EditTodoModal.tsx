@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, Todo, TodoUpdate } from '@/lib/supabase'
+import type { Todo, TodoUpdate } from '@/lib/db'
+import { updateTodo } from '@/lib/actions'
 import { X, Sparkles } from 'lucide-react'
 
 interface EditTodoModalProps {
@@ -29,15 +30,12 @@ export default function EditTodoModal({ todo, onClose, onSuccess }: EditTodoModa
     setLoading(true)
     setError('')
 
-    const { error: supaErr } = await supabase
-      .from('todos')
-      .update(form)
-      .eq('id', todo.id)
+    const { error: dbErr } = await updateTodo(todo.id, form)
 
     setLoading(false)
 
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

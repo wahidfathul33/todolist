@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Todo } from '@/lib/supabase'
+import type { Todo } from '@/lib/db'
 import { Pencil, Trash2, Calendar, FileText, ChevronDown } from 'lucide-react'
 import RichText from '@/components/RichText'
 import { format } from 'date-fns'

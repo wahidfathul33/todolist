@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Link } from '@/lib/supabase'
+import type { Link } from '@/lib/db'
 import { Pencil, Trash2, Star, ExternalLink, ChevronDown } from 'lucide-react'
 
 interface LinkCardProps {

@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, TodoInsert } from '@/lib/supabase'
+import type { TodoInsert } from '@/lib/db'
+import { createTodo } from '@/lib/actions'
 import { X, Sparkles } from 'lucide-react'
 
 interface AddTodoModalProps {
@@ -28,11 +29,11 @@ export default function AddTodoModal({ onClose, onSuccess }: AddTodoModalProps) 
     setLoading(true)
     setError('')
 
-    const { error: supaErr } = await supabase.from('todos').insert([form])
+    const { error: dbErr } = await createTodo(form)
     setLoading(false)
 
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

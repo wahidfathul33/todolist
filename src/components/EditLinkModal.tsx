@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, Link, LinkUpdate } from '@/lib/supabase'
+import type { Link, LinkUpdate } from '@/lib/db'
+import { updateLink } from '@/lib/actions'
 import { X, Link2 } from 'lucide-react'
 
 interface EditLinkModalProps {
@@ -31,10 +32,10 @@ export default function EditLinkModal({ link, onClose, onSuccess }: EditLinkModa
     }
     setLoading(true)
     setError('')
-    const { error: supaErr } = await supabase.from('links').update({ ...form, url }).eq('id', link.id)
+    const { error: dbErr } = await updateLink(link.id, { ...form, url })
     setLoading(false)
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

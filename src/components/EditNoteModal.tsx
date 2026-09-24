@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, Note, NoteUpdate } from '@/lib/supabase'
+import type { Note, NoteUpdate } from '@/lib/db'
+import { updateNote } from '@/lib/actions'
 import { X, NotebookPen } from 'lucide-react'
 
 interface EditNoteModalProps {
@@ -23,10 +24,10 @@ export default function EditNoteModal({ note, onClose, onSuccess }: EditNoteModa
     }
     setLoading(true)
     setError('')
-    const { error: supaErr } = await supabase.from('notes').update(form).eq('id', note.id)
+    const { error: dbErr } = await updateNote(note.id, form)
     setLoading(false)
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

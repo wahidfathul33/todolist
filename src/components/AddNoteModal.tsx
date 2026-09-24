@@ -1,7 +1,8 @@
 'use client'
 
 import { useState } from 'react'
-import { supabase, NoteInsert } from '@/lib/supabase'
+import type { NoteInsert } from '@/lib/db'
+import { createNote } from '@/lib/actions'
 import { X, NotebookPen } from 'lucide-react'
 
 interface AddNoteModalProps {
@@ -22,10 +23,10 @@ export default function AddNoteModal({ onClose, onSuccess }: AddNoteModalProps) 
     }
     setLoading(true)
     setError('')
-    const { error: supaErr } = await supabase.from('notes').insert([form])
+    const { error: dbErr } = await createNote(form)
     setLoading(false)
-    if (supaErr) {
-      setError('Waduh ada error: ' + supaErr.message)
+    if (dbErr) {
+      setError('Waduh ada error: ' + dbErr)
     } else {
       onSuccess()
       onClose()

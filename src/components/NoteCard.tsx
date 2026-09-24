@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { Note } from '@/lib/supabase'
+import type { Note } from '@/lib/db'
 import { Pencil, Trash2, Star, ChevronDown } from 'lucide-react'
 import RichText from '@/components/RichText'
 import { formatDistanceToNow } from 'date-fns'
