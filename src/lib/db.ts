@@ -1,6 +1,19 @@
-import { neon } from '@neondatabase/serverless'
+import { neon, type NeonQueryFunction } from '@neondatabase/serverless'
 
-export const sql = neon(process.env.DATABASE_URL!)
+let client: NeonQueryFunction<false, false> | null = null
+
+// Client dibuat saat pertama dipakai, bukan saat modul di-import. Kalau
+// DATABASE_URL hilang atau salah bentuk, error-nya jatuh di dalam try/catch
+// action sehingga bisa ditampilkan sebagai notifikasi — bukan meledak waktu
+// import dan melewati semua penanganan error.
+export function db(): NeonQueryFunction<false, false> {
+  if (!client) {
+    const url = process.env.DATABASE_URL
+    if (!url) throw new Error('DATABASE_URL belum diatur di environment server')
+    client = neon(url)
+  }
+  return client
+}
 
 export type Todo = {
   id: number

@@ -26,9 +26,14 @@ import NoteCard from '@/components/NoteCard'
 import AddLinkModal from '@/components/AddLinkModal'
 import EditLinkModal from '@/components/EditLinkModal'
 import LinkCard from '@/components/LinkCard'
+import DbErrorBanner from '@/components/DbErrorBanner'
 
 export default function Home() {
   const [activeTab, setActiveTab] = useState<'todo' | 'note' | 'link'>('todo')
+
+  // Pesan gangguan database; null berarti koneksi sehat.
+  const [dbError, setDbError] = useState<string | null>(null)
+  const [retrying, setRetrying] = useState(false)
 
   // Todo state
   const [todos, setTodos] = useState<Todo[]>([])
@@ -55,10 +60,24 @@ export default function Home() {
   const [linkDeleteConfirm, setLinkDeleteConfirm] = useState<number | null>(null)
   const [linkSearch, setLinkSearch] = useState('')
 
+  // Kalau Server Action sendiri tidak sampai ke server (mati total, offline),
+  // panggilannya throw — jadi jaring ini dipakai di semua pemanggilan.
+  const reportFailure = (e: unknown) => {
+    setDbError(
+      e instanceof Error && /fetch|network|Failed/i.test(e.message)
+        ? 'Tidak bisa menghubungi server'
+        : 'Terjadi gangguan saat menghubungi database'
+    )
+  }
+
   const fetchTodos = async () => {
     setLoading(true)
     try {
-      setTodos(await getTodos())
+      const { data, error } = await getTodos()
+      setDbError(error)
+      if (!error) setTodos(data)
+    } catch (e) {
+      reportFailure(e)
     } finally {
       setLoading(false)
     }
@@ -67,7 +86,11 @@ export default function Home() {
   const fetchNotes = async () => {
     setNotesLoading(true)
     try {
-      setNotes(await getNotes())
+      const { data, error } = await getNotes()
+      setDbError(error)
+      if (!error) setNotes(data)
+    } catch (e) {
+      reportFailure(e)
     } finally {
       setNotesLoading(false)
     }
@@ -76,7 +99,11 @@ export default function Home() {
   const fetchLinks = async () => {
     setLinksLoading(true)
     try {
-      setLinks(await getLinks())
+      const { data, error } = await getLinks()
+      setDbError(error)
+      if (!error) setLinks(data)
+    } catch (e) {
+      reportFailure(e)
     } finally {
       setLinksLoading(false)
     }
@@ -84,30 +111,61 @@ export default function Home() {
 
   // Server Function dari client dikirim satu per satu, jadi load awal digabung
   // ke satu action supaya ketiga query jalan paralel di server.
-  useEffect(() => {
-    const load = async () => {
-      try {
-        const data = await getAll()
+  const loadAll = async () => {
+    try {
+      const data = await getAll()
+      setDbError(data.error)
+      if (!data.error) {
         setTodos(data.todos)
         setNotes(data.notes)
         setLinks(data.links)
-      } finally {
-        setLoading(false)
-        setNotesLoading(false)
-        setLinksLoading(false)
       }
+    } catch (e) {
+      reportFailure(e)
+    } finally {
+      setLoading(false)
+      setNotesLoading(false)
+      setLinksLoading(false)
     }
-    load()
+  }
+
+  useEffect(() => {
+    void (async () => {
+      await loadAll()
+    })()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  const handleRetry = async () => {
+    setRetrying(true)
+    try {
+      await loadAll()
+    } finally {
+      setRetrying(false)
+    }
+  }
+
+  // Mutasi yang dipicu dari kartu (hapus, toggle) tidak punya form untuk
+  // menampilkan error, jadi kegagalannya diarahkan ke banner di atas.
+  const runMutation = async (
+    op: () => Promise<{ error: string | null }>,
+    refresh: () => Promise<void>
+  ) => {
+    try {
+      const { error } = await op()
+      setDbError(error)
+      if (!error) await refresh()
+    } catch (e) {
+      reportFailure(e)
+    }
+  }
+
   const handleToggleNoteStar = async (note: Note) => {
-    await toggleNoteStar(note.id)
-    fetchNotes()
+    await runMutation(() => toggleNoteStar(note.id), fetchNotes)
   }
 
   const handleToggleLinkStar = async (link: Link) => {
-    await toggleLinkStar(link.id)
-    fetchLinks()
+    await runMutation(() => toggleLinkStar(link.id), fetchLinks)
   }
 
   const handleDeleteNote = async (id: number) => {
@@ -116,9 +174,8 @@ export default function Home() {
       setTimeout(() => setNoteDeleteConfirm(null), 3000)
       return
     }
-    await deleteNote(id)
     setNoteDeleteConfirm(null)
-    fetchNotes()
+    await runMutation(() => deleteNote(id), fetchNotes)
   }
 
   const handleDeleteLink = async (id: number) => {
@@ -127,9 +184,8 @@ export default function Home() {
       setTimeout(() => setLinkDeleteConfirm(null), 3000)
       return
     }
-    await deleteLink(id)
     setLinkDeleteConfirm(null)
-    fetchLinks()
+    await runMutation(() => deleteLink(id), fetchLinks)
   }
 
   const handleDelete = async (id: number) => {
@@ -138,9 +194,8 @@ export default function Home() {
       setTimeout(() => setDeleteConfirm(null), 3000)
       return
     }
-    await deleteTodo(id)
     setDeleteConfirm(null)
-    fetchTodos()
+    await runMutation(() => deleteTodo(id), fetchTodos)
   }
 
   const handleToggleStatus = async (todo: Todo) => {
@@ -150,8 +205,7 @@ export default function Home() {
       selesai: 'belum',
     }
     const newStatus = cycle[todo.status] ?? 'belum'
-    await updateTodo(todo.id, { status: newStatus })
-    fetchTodos()
+    await runMutation(() => updateTodo(todo.id, { status: newStatus }), fetchTodos)
   }
 
   const filteredTodos = useMemo(() => {
@@ -227,6 +281,11 @@ export default function Home() {
           <h1 className="text-3xl font-extrabold text-pink-700 tracking-tight">Fita Todo List</h1>
           <p className="text-pink-400 text-sm mt-1 font-medium">Atur kegiatanmu dengan cantik ✨</p>
         </div>
+
+        {/* Notifikasi database bermasalah — berlaku untuk semua tab */}
+        {dbError && (
+          <DbErrorBanner message={dbError} onRetry={handleRetry} retrying={retrying} />
+        )}
 
         {/* Tab switcher */}
         <div className="flex bg-white rounded-2xl p-1 border-2 border-pink-100 shadow-sm mb-6">
@@ -304,12 +363,18 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-pink-600 font-bold text-base">
-                {search || filter !== 'all' ? 'Tidak ada yang cocok~' : 'Belum ada kegiatan nih!'}
+                {dbError
+                  ? 'Kegiatan belum bisa dimuat'
+                  : search || filter !== 'all'
+                    ? 'Tidak ada yang cocok~'
+                    : 'Belum ada kegiatan nih!'}
               </p>
               <p className="text-pink-400 text-sm mt-1">
-                {search || filter !== 'all'
-                  ? 'Coba ubah filter atau pencarian kamu'
-                  : 'Yuk tambah kegiatan pertamamu! 🌸'}
+                {dbError
+                  ? 'Sambungan database bermasalah, bukan berarti datamu kosong'
+                  : search || filter !== 'all'
+                    ? 'Coba ubah filter atau pencarian kamu'
+                    : 'Yuk tambah kegiatan pertamamu! 🌸'}
               </p>
             </div>
           </div>
@@ -401,10 +466,18 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-violet-600 font-bold text-base">
-                {noteSearch ? 'Tidak ada yang cocok~' : 'Belum ada catatan nih!'}
+                {dbError
+                  ? 'Catatan belum bisa dimuat'
+                  : noteSearch
+                    ? 'Tidak ada yang cocok~'
+                    : 'Belum ada catatan nih!'}
               </p>
               <p className="text-violet-400 text-sm mt-1">
-                {noteSearch ? 'Coba ubah pencarian kamu' : 'Yuk tulis catatan pertamamu! 📝'}
+                {dbError
+                  ? 'Sambungan database bermasalah, bukan berarti datamu kosong'
+                  : noteSearch
+                    ? 'Coba ubah pencarian kamu'
+                    : 'Yuk tulis catatan pertamamu! 📝'}
               </p>
             </div>
           </div>
@@ -458,10 +531,18 @@ export default function Home() {
             </div>
             <div className="text-center">
               <p className="text-sky-600 font-bold text-base">
-                {linkSearch ? 'Tidak ada yang cocok~' : 'Belum ada link nih!'}
+                {dbError
+                  ? 'Link belum bisa dimuat'
+                  : linkSearch
+                    ? 'Tidak ada yang cocok~'
+                    : 'Belum ada link nih!'}
               </p>
               <p className="text-sky-400 text-sm mt-1">
-                {linkSearch ? 'Coba ubah pencarian kamu' : 'Yuk simpan link favoritmu! 🔗'}
+                {dbError
+                  ? 'Sambungan database bermasalah, bukan berarti datamu kosong'
+                  : linkSearch
+                    ? 'Coba ubah pencarian kamu'
+                    : 'Yuk simpan link favoritmu! 🔗'}
               </p>
             </div>
           </div>
